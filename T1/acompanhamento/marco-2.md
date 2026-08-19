@@ -64,19 +64,17 @@ Considerando a instância:
 
 Temos:
 
-- Número de vértices: `|V| = 11`;
-- Número de arestas: `|E| = 8`;
-- Grau máximo da instância: `3`;
+- Número de vértices: `|V| = 12`;
+- Número de arestas: `|E| = 10`;
+- Grau máximo da instância: `2`;
 - Grau máximo possível no problema: `4`;
-- Grau médio: `2|E| / |V| ≈ 1,45`.
+- Grau médio: `2|E| / |V| ≈ 1,67`.
 
 ## 5. Validação da representação
 
 A representação é validada utilizando a instância pequena do marco 1.
 
-Por exemplo, o vértice `(2,6)` possui como vizinhos os pisos em `(2,5)`, `(2,7)` e `(3,6)`.
-
-A posição `(2,4)` contém `#`, portanto não representa um vértice e não gera uma aresta.
+Por exemplo, o vértice (2,6) possui como vizinhos os pisos em (2,5) e (2,7). As posições (1,6) e (3,6) contêm #, portanto não representam vértices e não geram arestas.
 
 Dessa forma, a matriz consegue representar os vértices e determinar corretamente suas adjacências.
 
