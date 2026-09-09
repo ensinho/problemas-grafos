@@ -1,0 +1,97 @@
+CSES 1192 - Counting Rooms
+Casos de teste usados para validar a solucao (T1/src/Main.java)
+
+Cada caso esta em um arquivo separado nesta pasta. Para executar:
+
+    javac -d classes ../src/Main.java
+    java -cp classes Main < caso-1.txt
+
+------------------------------------------------------------------
+caso-1.txt  | esperado: 3   | exemplo oficial do enunciado do CSES
+------------------------------------------------------------------
+5 8
+########
+#..#...#
+####.#.#
+#..#...#
+########
+
+Tres regioes separadas por paredes.
+
+------------------------------------------------------------------
+caso-2.txt  | esperado: 0   | mapa sem nenhum piso
+------------------------------------------------------------------
+3 3
+###
+###
+###
+
+Nenhum vertice existe, entao nenhuma busca e iniciada.
+
+------------------------------------------------------------------
+caso-3.txt  | esperado: 1   | menor mapa possivel (H = W = 1)
+------------------------------------------------------------------
+1 1
+.
+
+Um unico vertice isolado ja conta como uma sala.
+
+------------------------------------------------------------------
+caso-4.txt  | esperado: 1   | mapa totalmente aberto
+------------------------------------------------------------------
+3 3
+...
+...
+...
+
+Todos os pisos estao conectados, entao a busca inicia uma unica vez.
+
+------------------------------------------------------------------
+caso-5.txt  | esperado: 4   | pisos so em diagonal
+------------------------------------------------------------------
+3 3
+#.#
+.#.
+#.#
+
+Confirma que a adjacencia e apenas horizontal e vertical.
+Se a diagonal contasse como aresta, a resposta seria 1.
+
+------------------------------------------------------------------
+caso-6.txt  | esperado: 3   | mapa com uma unica linha
+------------------------------------------------------------------
+1 5
+.#.#.
+
+Verifica que a checagem de limites nao acessa linhas inexistentes.
+
+------------------------------------------------------------------
+TESTES DE ESTRESSE (nao versionados por causa do tamanho ~1 MB)
+------------------------------------------------------------------
+
+1) Mapa 1000x1000 totalmente aberto  | esperado: 1
+   Pior caso de profundidade: uma unica regiao com 1.000.000 de vertices.
+
+   python -c "
+   with open('grande.txt','w') as f:
+       f.write('1000 1000\n')
+       for _ in range(1000): f.write('.'*1000+'\n')
+   "
+
+2) Mapa 1000x1000 em padrao xadrez   | esperado: 500000
+   Pior caso de quantidade de regioes: nenhum piso toca outro piso.
+
+   python -c "
+   with open('xadrez.txt','w') as f:
+       f.write('1000 1000\n')
+       for i in range(1000):
+           f.write(''.join('.' if (i+j)%2==0 else '#' for j in range(1000))+'\n')
+   "
+
+Resultados medidos (Java 26, maquina local):
+
+   Main (BFS)      grande.txt  -> 1        em 0,27 s
+   Main (BFS)      xadrez.txt  -> 500000   em 0,26 s
+   MainDFS (DFS)   grande.txt  -> StackOverflowError
+
+O tempo inclui a inicializacao da JVM.
