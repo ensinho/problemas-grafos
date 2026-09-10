@@ -130,29 +130,52 @@ T1/
 
 ## Como executar
 
+Abra o terminal do VS Code na pasta `T1`:
+
+```text
+\problemas-grafos\T1
+```
+
+### PowerShell
+
 Compilar:
 
-```sh
+```powershell
 javac -d classes src/Main.java
 ```
 
 Rodar com um caso de teste:
 
-```sh
-java -cp classes Main < dados/caso-1.txt
+```powershell
+Get-Content dados\caso-1.txt | java -cp classes Main
 ```
 
 Saída esperada: `3`.
 
 Rodar todos os casos pequenos de uma vez:
 
-```sh
-for i in 1 2 3 4 5 6; do
-  echo "caso-$i: $(java -cp classes Main < dados/caso-$i.txt)"
-done
+```powershell
+1..6 | ForEach-Object {
+        $resultado = Get-Content "dados\caso-$_.txt" | java -cp classes Main
+        "caso-$($_): $resultado"
+}
 ```
 
-Resultados esperados: `3, 0, 1, 1, 4, 3`.
+### CMD
+
+Compilar:
+
+```bat
+javac -d classes src\Main.java
+```
+
+Rodar com um caso de teste:
+
+```bat
+java -cp classes Main < dados\caso-1.txt
+```
+
+Saída esperada: `3`.
 
 ## Testes efetuados
 
