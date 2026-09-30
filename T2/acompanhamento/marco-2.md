@@ -1,126 +1,205 @@
-# Marco 2 — Conectividade Forte
+# Marco 2 — Componentes Conexas
 
-## 1. Propriedade estrutural
+## 1. Instância utilizada
 
-O problema Flight Routes Check utiliza um grafo direcionado.
-A propriedade que precisa ser verificada é a **conectividade forte**, ou seja, deve ser possível sair de qualquer cidade e chegar a qualquer outra cidade.
-Para isso, foi utilizada uma pequena instância com 4 vértices e 5 arestas:
+Para este marco foi utilizado um grafo simples não direcionado com 6 vértices e 5 arestas, dividido em duas componentes conexas.
+
+### Grafo
 
 ```text
-1 → 2
-↑   ↓
-3 ←─┘
+      1 ------- 2
+      |         |
+      |         |
+      4 ------- 3
 
-1 → 4
-3 → 4
+
+      5 ------- 6
 ```
 
-Lista de adjacência:
+### Arestas
+
+- 1 - 2
+- 2 - 3
+- 3 - 4
+- 4 - 1
+- 5 - 6
+
+### Lista de adjacência
 
 ```text
 1: 2, 4
-2: 3
-3: 1, 4
-4: -
+2: 1, 3
+3: 2, 4
+4: 1, 3
+5: 6
+6: 5
 ```
 
-## 2. Critério utilizado
+O grafo possui duas componentes conexas:
 
-Para verificar a conectividade forte, são realizados dois DFS:
+```text
+C1 = {1, 2, 3, 4}
+C2 = {5, 6}
+```
 
-1. DFS no grafo original, partindo de um vértice.
-2. DFS no grafo reverso, com todas as arestas invertidas, partindo do mesmo vértice.
+Para identificar a qual componente cada vértice pertence, é utilizado um vetor de IDs de componentes:
 
-Se os dois DFS alcançarem todos os vértices, o grafo é fortemente conexo.
+```text
+id(1..6) = [0, 0, 0, 0, 1, 1]
+```
 
-## 3. Execução manual
+Assim, os vértices 1, 2, 3 e 4 pertencem à componente `0`, enquanto os vértices 5 e 6 pertencem à componente `1`.
 
-### DFS no grafo original
+## 2. Excentricidade, raio e diâmetro
 
-Começando pelo vértice `1`:
+A excentricidade de um vértice é a maior distância entre ele e qualquer outro vértice da mesma componente.
+
+### Componente 1
+
+Para a componente `{1, 2, 3, 4}`:
+
+```text
+ecc(1) = 2
+ecc(2) = 2
+ecc(3) = 2
+ecc(4) = 2
+```
+
+Portanto:
+
+```text
+Raio = min{2, 2, 2, 2} = 2
+Diâmetro = max{2, 2, 2, 2} = 2
+Centro = {1, 2, 3, 4}
+```
+
+### Componente 2
+
+Para a componente `{5, 6}`:
+
+```text
+ecc(5) = 1
+ecc(6) = 1
+```
+
+Portanto:
+
+```text
+Raio = min{1, 1} = 1
+Diâmetro = max{1, 1} = 1
+Centro = {5, 6}
+```
+
+## 3. Execução do DFS
+
+Para identificar as componentes conexas, é utilizada uma busca em profundidade (DFS).
+
+A busca começa pelo vértice `1`:
 
 ```text
 1 → 2 → 3 → 4
 ```
 
-Todos os vértices são alcançados:
+Todos esses vértices recebem o mesmo ID de componente:
 
 ```text
-Visitados = {1, 2, 3, 4}
+id[1] = 0
+id[2] = 0
+id[3] = 0
+id[4] = 0
 ```
 
-### DFS no grafo reverso
-
-Invertendo as arestas:
+Depois, o algoritmo encontra o vértice `5`, que ainda não foi visitado, e inicia uma nova busca:
 
 ```text
-1: 3
-2: 1
-3: 2
-4: 1, 3
+5 → 6
 ```
 
-Começando novamente pelo vértice `1`:
+Esses vértices recebem um novo ID:
 
 ```text
-1 → 3 → 2
+id[5] = 1
+id[6] = 1
 ```
 
-O vértice `4` não é alcançado:
+Ao final:
 
 ```text
-Visitados = {1, 2, 3}
+id(1..6) = [0, 0, 0, 0, 1, 1]
 ```
 
-Logo, o grafo não é fortemente conexo.
+Portanto, foram identificadas duas componentes conexas.
 
 ## 4. Estado utilizado pelo DFS
 
-O DFS utiliza o vetor `marcado[v]` para controlar os vértices já visitados.
+O DFS utiliza duas informações principais:
 
-O estado é reiniciado antes da segunda busca:
+- `marcado[v]` → indica se o vértice já foi visitado.
+- `id[v]` → indica a qual componente conexa o vértice pertence.
+
+Durante a primeira busca:
 
 ```text
-DFS no grafo original
-→ marcado[v]
-
-DFS no grafo reverso
-→ marcado[v] novamente
+1, 2, 3, 4 → id = 0
 ```
 
-Além do vetor de visitados, é necessário manter o **grafo reverso**, utilizado na segunda busca.
+Durante a segunda busca:
+
+```text
+5, 6 → id = 1
+```
+
+O vetor de IDs permite identificar se dois vértices pertencem à mesma componente.
+
+Por exemplo:
+
+```text
+id[1] == id[4] → mesma componente
+id[1] != id[5] → componentes diferentes
+```
 
 ## 5. Complexidade
 
-Considerando uma representação por lista de adjacência:
+Considerando uma representação por lista de adjacência, o DFS percorre os vértices e as arestas do grafo.
 
-- Construção do grafo: `O(V + E)`
-- Construção do grafo reverso: `O(V + E)`
-- Dois DFS: `O(V + E)`
-
-Portanto:
+Complexidade de tempo:
 
 ```text
-Tempo: O(V + E)
-Espaço: O(V + E)
+O(V + E)
 ```
+
+Complexidade de memória:
+
+```text
+O(V + E)
+```
+
+A lista de adjacência ocupa `O(V + E)` e os vetores `marcado` e `id` ocupam `O(V)`.
 
 ## 6. Conclusão
 
-Neste caso, o DFS foi utilizado para verificar a conectividade forte do grafo direcionado.
+Neste caso, o DFS foi utilizado para identificar as componentes conexas e atribuir um ID para cada uma.
 
-O primeiro DFS alcançou todas as cidades, porém o DFS no grafo reverso não alcançou a cidade `4`.
-
-Portanto:
+Os resultados obtidos foram:
 
 ```text
-Grafo fortemente conexo = NÃO
+Componentes conexas = 2
+
+Componente 0:
+Raio = 2
+Diâmetro = 2
+Centro = {1, 2, 3, 4}
+
+Componente 1:
+Raio = 1
+Diâmetro = 1
+Centro = {5, 6}
 ```
 
-Um par válido de cidades para o problema é:
+O vetor final de componentes é:
 
 ```text
-4 1
+id(1..6) = [0, 0, 0, 0, 1, 1]
 ```
 
-pois não existe caminho da cidade `4` até a cidade `1`.
+A execução mostra como o DFS identifica cada componente e como o vetor de IDs permite saber a qual componente cada vértice pertence.
