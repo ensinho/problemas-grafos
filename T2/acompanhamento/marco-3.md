@@ -2,202 +2,140 @@
 
 ## 1. Propriedade estrutural
 
-O problema Flight Routes Check trabalha com um grafo direcionado:
+A propriedade exigida é a **conectividade forte**: para todo par de cidades `v` e `w`, existe caminho dirigido de `v` para `w` **e** de `w` para `v`.
 
-- Vértices representam cidades.
-- Arestas representam voos direcionados.
-- Precisamos verificar se é possível viajar de qualquer cidade para qualquer outra.
-
-A propriedade estrutural necessária é a **conectividade forte**.
-
----
+Essa relação divide o dígrafo em **componentes fortemente conexas** (componentes f-conexas). O grafo é fortemente conexo quando todos os vértices ficam na mesma componente.
 
 ## 2. Critério utilizado
 
-Para verificar a conectividade forte, utilizamos duas buscas em profundidade (DFS).
-
-Escolhemos uma cidade como referência, por exemplo a cidade `1`.
-
-### Primeiro DFS — grafo original
-
-Verificamos se:
-
 ```text
-1 → todas as cidades
+fortemente conexo  ⇔  existe exatamente 1 componente f-conexa
 ```
 
-Se alguma cidade não for alcançada, o grafo não é fortemente conexo.
+As componentes são contadas pelo **algoritmo de Kosaraju-Sharir** (material E1, seção 3.3):
 
-### Segundo DFS — grafo reverso
+1. **Fase 1:** calcular a pós-ordem reversa (`reversePost`) de `Gᵀ`, o grafo com as arestas invertidas;
+2. **Fase 2:** executar a DFS em `G`, iniciando nos vértices ainda não marcados na ordem da fase 1. Cada DFS iniciada marca exatamente uma componente.
 
-Invertendo todas as arestas do grafo, fazemos novamente um DFS a partir da cidade `1`.
+Por que funciona:
 
-Isso verifica, no grafo original, se:
+* `G` e `Gᵀ` têm as mesmas componentes, porque inverter todas as arestas não desfaz nenhum ciclo;
+* contraindo cada componente num vértice, obtém-se o **grafo condensado**, que é um DAG;
+* a pós-ordem reversa em um DAG é uma ordenação topológica (Prop. A do material). Assim, o primeiro vértice da `reversePost` de `Gᵀ` está numa componente **fonte** de `Gᵀ`, que é uma componente **sumidouro** de `G`;
+* a DFS em `G` iniciada num sumidouro não consegue sair dele, então marca só aquela componente. As seguintes repetem o raciocínio entre os vértices restantes.
 
-```text
-todas as cidades → 1
-```
-
-Se as duas buscas alcançarem todas as cidades:
-
-```text
-1 → todas
-e
-todas → 1
-```
-
-então qualquer cidade `A` consegue chegar a qualquer cidade `B` através de:
-
-```text
-A → 1 → B
-```
-
-Logo, o grafo é fortemente conexo.
-
----
+A primeira ideia era fazer duas DFS a partir da cidade `1`: uma em `G` (`1` alcança todas?) e outra em `Gᵀ` (todas alcançam `1`?). Ela também está correta e custa o mesmo `O(V + E)`. Mesmo assim, trocamos pelo Kosaraju-Sharir por dois motivos. Ele é a referência da disciplina para conectividade forte (`algs4.KosarajuSharirSCC`). E o vetor `id[]` que ele produz já fornece o par pedido na resposta `NO` (seção 4).
 
 ## 3. Rastreamento manual
 
-Utilizando uma instância pequena:
+Mesma instância do marco 1:
 
 ```text
-4 5
-
-1 2
-2 3
-3 1
-1 4
+4 5          1 ───→ 2
+1 2          ↑ ↘    │
+2 3          │  4   │
+3 1          │  ↑   ↓
+1 4          └──┴── 3
 3 4
 ```
 
-Lista de adjacência:
+### Listas de adjacência
+
+A `Bag` do `algs4` insere no início da lista, então os vizinhos aparecem na ordem inversa da leitura:
 
 ```text
-1: 2, 4
-2: 3
-3: 1, 4
-4: -
+G               Gᵀ = G.reverse()
+1: 4, 2         1: 3
+2: 3            2: 1
+3: 4, 1         3: 2
+4: -            4: 3, 1
 ```
 
-### DFS no grafo original
+### Fase 1 — DFS em Gᵀ (`DepthFirstOrder`)
 
-Começando em `1`:
+Os vértices são percorridos em ordem crescente. Cada vértice é empilhado em `reversePost` quando sua exploração termina.
+
+| Passo | Ação                       | reversePost (topo à esquerda) |
+| ----- | -------------------------- | ----------------------------- |
+| 1     | raiz 1, visita 1           | —                             |
+| 2     | 1 → 3, visita 3            | —                             |
+| 3     | 3 → 2, visita 2            | —                             |
+| 4     | 2 → 1 já marcado           | —                             |
+| 5     | termina 2                  | 2                             |
+| 6     | termina 3                  | 3, 2                          |
+| 7     | termina 1                  | 1, 3, 2                       |
+| 8     | raiz 4, visita 4           | 1, 3, 2                       |
+| 9     | 4 → 3 e 4 → 1 já marcados  | 1, 3, 2                       |
+| 10    | termina 4                  | 4, 1, 3, 2                    |
+
+A ordem da fase 2 começa pelo `4`, que é justamente a cidade sem voo de saída em `G`, ou seja, o sumidouro.
+
+### Fase 2 — DFS em G na ordem `4, 1, 3, 2`
+
+| Ordem | Situação         | DFS em G                                 | id atribuído              |
+| ----- | ---------------- | ---------------------------------------- | ------------------------- |
+| 4     | não marcado      | visita 4, sem saída                      | id[4] = 0                 |
+| 1     | não marcado      | 1 → 4 (marcado), 1 → 2 → 3, 3 → 1 (marcado) | id[1] = id[2] = id[3] = 1 |
+| 3     | já marcado, pula | —                                        | —                         |
+| 2     | já marcado, pula | —                                        | —                         |
 
 ```text
-1 → 2 → 3 → 4
+id(1..4) = [1, 1, 1, 0]
+count    = 2
 ```
 
-Todos os vértices são visitados:
-
-```text
-Visitados = {1, 2, 3, 4}
-```
-
-Portanto, `1` consegue chegar a todas as cidades.
-
-### DFS no grafo reverso
-
-Invertendo as arestas:
-
-```text
-1: 3
-2: 1
-3: 2
-4: 1, 3
-```
-
-Começando novamente em `1`:
-
-```text
-1 → 3 → 2
-```
-
-Agora:
-
-```text
-Visitados = {1, 2, 3}
-```
-
-A cidade `4` não foi alcançada.
-
-Isso significa que, no grafo original, `4` não consegue chegar em `1`.
-
-Portanto, o grafo não é fortemente conexo.
-
----
+A DFS iniciada em `1` encontra o `4` já marcado e não entra nele. É isso que impede que duas componentes se misturem. Como `count = 2`, o grafo **não** é fortemente conexo.
 
 ## 4. Resposta exigida pelo problema
 
-O problema não pede apenas `YES` ou `NO`.
+A componente `id = 0` é sempre um sumidouro de `G`, ou seja, nenhuma aresta sai dela. Por isso:
 
-Quando o grafo não é fortemente conexo, precisamos informar duas cidades `a` e `b` em que `a` não consegue chegar em `b`.
+* `a` = qualquer vértice com `id[a] = 0`;
+* `b` = qualquer vértice com `id[b] ≠ 0`;
 
-Neste exemplo:
+e não existe rota de `a` para `b`.
 
-```text
-4 → 1
-```
-
-não existe.
-
-Então uma resposta válida é:
+Na instância, `a = 4` e `b = 1`:
 
 ```text
 NO
 4 1
 ```
 
-O par é obtido diretamente a partir do vértice que não foi alcançado durante uma das buscas.
-
----
+O enunciado mostra `4 2`, mas aceita qualquer par válido.
 
 ## 5. Implementações de referência
 
-As principais estruturas do `algs4` utilizadas como referência são:
+| Classe `algs4`      | Papel                                                |
+| ------------------- | ---------------------------------------------------- |
+| `Digraph`           | listas de adjacência e `reverse()`, que gera `Gᵀ`    |
+| `Bag`               | lista de adjacência de cada vértice                  |
+| `DepthFirstOrder`   | fase 1: pós-ordem reversa                            |
+| `Stack`             | guarda a `reversePost`                               |
+| `KosarajuSharirSCC` | fase 2: `marked[]`, `id[]` e `count`                 |
 
-- `Digraph` — representação do grafo direcionado.
-- `DirectedDFS` — realização da busca em profundidade para verificar alcançabilidade.
+Adaptações previstas:
 
-As adaptações necessárias são:
+* converter as cidades `1..n` para os vértices `0..n-1` e voltar ao imprimir;
+* trocar `StdIn` por uma leitura mais rápida, já que são até 200.000 arestas;
+* usar `count()` para decidir entre `YES` e `NO`, e `id()` para escolher o par;
+* remover o `check()`, que usa `TransitiveClosure`, uma matriz `V × V` inviável para `V = 100.000`;
+* tratar a profundidade da recursão, que pode chegar a 100.000 chamadas, por exemplo num ciclo que passa por todas as cidades.
 
-- construir o grafo reverso;
-- realizar as duas buscas;
-- verificar quais vértices foram alcançados;
-- identificar um par de cidades que não possui caminho entre si quando a resposta for `NO`.
-
-Nesta etapa não será implementado o código. O foco é entender e justificar a estratégia.
-
----
+Nesta etapa não foi implementado código.
 
 ## 6. Complexidade
 
-Considerando uma representação por lista de adjacência:
+| Item                         | Tempo      | Memória    |
+| ---------------------------- | ---------- | ---------- |
+| `G` (listas de adjacência)   | `O(V + E)` | `O(V + E)` |
+| `Gᵀ` (`reverse()`)           | `O(V + E)` | `O(V + E)` |
+| Fase 1 (DFS em `Gᵀ`)         | `O(V + E)` | `O(V)`     |
+| Fase 2 (DFS em `G`)          | `O(V + E)` | `O(V)`     |
+| Escolha do par `a b`         | `O(V)`     | —          |
 
-- Construção do grafo: `O(V + E)`
-- Construção do grafo reverso: `O(V + E)`
-- Primeiro DFS: `O(V + E)`
-- Segundo DFS: `O(V + E)`
+* **Representação do grafo:** `O(V + E)`;
+* **Memória auxiliar:** `O(V)`, para `marked[]`, `id[]`, `reversePost` e a pilha de recursão;
+* **Tempo total:** `O(V + E)`. O gargalo são as duas DFS e a construção de `Gᵀ`.
 
-Como essas operações são realizadas uma quantidade constante de vezes:
-
-```text
-Tempo total: O(V + E)
-```
-
-A representação dos dois grafos utiliza:
-
-```text
-O(V + E)
-```
-
-A memória auxiliar utilizada pelas buscas é:
-
-```text
-O(V)
-```
-
-Assim, a memória total permanece:
-
-```text
-O(V + E)
-```
+Depois de pronto, `count()` e `id(v)` respondem em `O(1)`.

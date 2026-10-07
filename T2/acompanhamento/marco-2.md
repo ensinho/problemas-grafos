@@ -4,6 +4,8 @@
 
 Para este marco foi utilizado um grafo simples não direcionado com 6 vértices e 5 arestas, dividido em duas componentes conexas.
 
+Ele é um caso particular do problema: as rotas entre cidades são consideradas nos dois sentidos, como pede o enunciado do marco (`V ≤ 6`, `E ≤ 6`, grafo não dirigido). A direção dos voos volta a ser considerada no marco 3.
+
 ### Grafo
 
 ```text

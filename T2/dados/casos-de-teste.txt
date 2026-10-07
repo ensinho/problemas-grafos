@@ -1,0 +1,114 @@
+CSES 1682 - Flight Routes Check
+Casos de teste usados para validar a solucao (T2/src/Main.java)
+
+Cada caso esta em um arquivo separado nesta pasta. Para executar:
+
+    javac -d classes ../src/Main.java
+    java -cp classes Main < caso-1.txt
+
+Quando a resposta e NO, o problema aceita qualquer par "a b" em que nao
+exista rota de a para b. Por isso a coluna "obtido" foi conferida por um
+verificador a parte (BFS de a ate b), e nao comparada com um texto fixo.
+
+------------------------------------------------------------------
+caso-1.txt  | esperado: NO  | exemplo oficial do enunciado do CSES
+------------------------------------------------------------------
+4 5
+1 2
+2 3
+3 1
+1 4
+3 4
+
+Componentes: {1,2,3} e {4}. O 4 nao tem voo de saida.
+Obtido: NO / 4 1  (o enunciado mostra 4 2; os dois pares sao validos)
+
+------------------------------------------------------------------
+caso-2.txt  | esperado: YES | um unico ciclo passando por todas
+------------------------------------------------------------------
+4 4
+1 2
+2 3
+3 4
+4 1
+
+Uma unica componente. Obtido: YES
+
+------------------------------------------------------------------
+caso-3.txt  | esperado: YES | menor entrada possivel (n = 1)
+------------------------------------------------------------------
+1 1
+1 1
+
+Uma cidade so, com um voo para ela mesma (laco). Uma componente.
+Obtido: YES
+
+------------------------------------------------------------------
+caso-4.txt  | esperado: NO  | caminho sem volta (DAG)
+------------------------------------------------------------------
+3 2
+1 2
+2 3
+
+Cada vertice e a sua propria componente (3 componentes).
+O sumidouro e o 3. Obtido: NO / 3 1
+
+------------------------------------------------------------------
+caso-5.txt  | esperado: NO  | dois ciclos sem ligacao entre si
+------------------------------------------------------------------
+4 4
+1 2
+2 1
+3 4
+4 3
+
+O grafo nem e fracamente conexo. Obtido: NO / 3 1
+
+------------------------------------------------------------------
+caso-6.txt  | esperado: NO  | dois ciclos ligados em um so sentido
+------------------------------------------------------------------
+4 5
+1 2
+2 1
+3 4
+4 3
+2 3
+
+Existe 2 -> 3, mas nao existe volta. Se o grafo fosse tratado como
+nao direcionado, a resposta sairia YES (erro). Obtido: NO / 3 1
+
+------------------------------------------------------------------
+caso-7.txt  | esperado: NO  | cidade isolada
+------------------------------------------------------------------
+3 2
+1 2
+2 1
+
+A cidade 3 nao tem nenhum voo. Obtido: NO / 3 1
+
+------------------------------------------------------------------
+caso-8.txt  | esperado: YES | dois ciclos compartilhando o vertice 3
+------------------------------------------------------------------
+5 7
+1 2
+2 3
+3 1
+3 4
+4 5
+5 3
+1 1
+
+Os ciclos 1-2-3 e 3-4-5 se juntam pelo 3, formando uma componente so.
+Tambem tem um laco (1 1), que nao muda a resposta. Obtido: YES
+
+==================================================================
+Casos de estresse (n = 100.000), gerados por script, nao versionados
+==================================================================
+
+ciclo                 | 1 -> 2 -> ... -> 100000 -> 1            | YES
+caminho               | 1 -> 2 -> ... -> 100000                 | NO 100000 1
+ciclo quebrado        | ciclo sem a aresta 50000 -> 50001        | NO 50000 1
+aleatorio             | 200.000 arestas sorteadas (seed 42)      | NO 99995 1
+ciclo + aleatorio     | ciclo completo + 100.000 arestas extras  | YES
+
+O "ciclo" e o pior caso para a recursao: a DFS empilha 100.000 chamadas.
