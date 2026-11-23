@@ -57,7 +57,7 @@ O grafo é dirigido porque existir o voo `a → b` não garante o voo `b → a`.
 
 O problema afere o conceito de **caminho mínimo de origem única** em grafos ponderados. Diferente do T1 e do T2, não basta saber *se* uma cidade é alcançável, nem contar quantos passos são dados: o que importa é a **soma dos pesos** do caminho.
 
-Um caminho com mais voos pode ser mais curto que um voo direto, se a soma dos seus pesos for menor. O algoritmo usado para encontrar essas distâncias é definido no marco 3.
+Um caminho com mais voos pode ser mais curto que um voo direto, se a soma dos seus pesos for menor. O algoritmo usado para encontrar essas distâncias é definido no marco 2.
 
 ## 8. Instância Pequena (criada pelo grupo)
 
@@ -135,7 +135,7 @@ Saída esperada:
 
 ---
 
-# Marco 2 — Representação e Validação
+# Marco 2 — Escolha do Algoritmo
 
 ## 1. Representação escolhida
 
@@ -273,4 +273,214 @@ O problema é um **problema de caminhos mínimos de origem única** (*single-sou
 
 Não é um problema de árvore geradora mínima, pois não se quer ligar todas as cidades com o menor custo total, e sim a menor distância de `1` até cada uma. Também não é um problema de fluxo, pois os pesos são comprimentos, não capacidades.
 
-Por ser ponderado, uma busca em largura (BFS) não resolve o problema: ela minimiza a **quantidade** de voos, e não a **soma dos pesos**. Na instância do grupo, a BFS escolheria `1 → 2` (1 voo, custo 4) em vez de `1 → 3 → 2` (2 voos, custo 3). A escolha e a justificativa do algoritmo ficam para o marco 3.
+Por ser ponderado, uma busca em largura (BFS) não resolve o problema: ela minimiza a **quantidade** de voos, e não a **soma dos pesos**. Na instância do grupo, a BFS escolheria `1 → 2` (1 voo, custo 4) em vez de `1 → 3 → 2` (2 voos, custo 3).
+
+## 7. Algoritmo escolhido: Dijkstra
+
+Entre as famílias da unidade (Kruskal/Prim, Dijkstra e Ford-Fulkerson/Edmonds-Karp), a que corresponde ao problema é a de caminhos mínimos, então o algoritmo escolhido é o **Dijkstra**.
+
+Ideia: manter uma estimativa `distTo[v]` para cada cidade e, a cada passo, retirar a cidade **ainda não processada com a menor estimativa**. Os voos que saem dela são usados para tentar melhorar as estimativas dos destinos (**relaxamento**).
+
+Por que ele serve aqui:
+
+* **pesos positivos** (`c ≥ 1`): quando uma cidade é retirada com a menor estimativa, nenhum caminho por outra cidade pode ficar mais barato depois, porque qualquer desvio só soma pesos positivos. Essa é a condição exigida pelo Dijkstra;
+* **origem única**: o Dijkstra calcula, numa única execução, a distância da origem até **todas** as cidades, exatamente o que a saída pede;
+* **arestas paralelas**: cada voo é relaxado separadamente, e o de menor peso vence naturalmente.
+
+Alternativas descartadas:
+
+| Algoritmo | Motivo do descarte |
+|-----------|--------------------|
+| BFS | minimiza o número de voos, não a soma dos pesos |
+| Bellman-Ford | correto, mas custa `O(V · E)`, cerca de `2 · 10¹⁰` operações no pior caso; só é necessário com pesos negativos, que não existem aqui |
+| Kruskal / Prim | constroem uma árvore geradora mínima, que não preserva as menores distâncias a partir de `1` |
+| Ford-Fulkerson / Edmonds-Karp | resolvem fluxo máximo; os pesos aqui são comprimentos, não capacidades |
+
+Implementação de referência: `algs4.DijkstraSP`, que usa uma fila de prioridade indexada (`IndexMinPQ`) para retirar a cidade de menor `distTo`.
+
+## 8. Complexidade de pior caso
+
+Considerando `V = n` cidades e `E = m` voos, com a `IndexMinPQ` (heap binário):
+
+| Item | Quantidade | Custo de cada | Total |
+|------|------------|---------------|-------|
+| Inicialização de `distTo[]` e `edgeTo[]` | `V` | `O(1)` | `O(V)` |
+| `delMin` (cada cidade sai da fila uma vez) | `V` | `O(log V)` | `O(V log V)` |
+| Relaxamento (cada voo é examinado uma vez) | `E` | `O(1)` | `O(E)` |
+| `insert` / `decreaseKey` (no máximo um por relaxamento) | `E` | `O(log V)` | `O(E log V)` |
+
+* **Tempo:** `O((V + E) log V)`, que se escreve `O(E log V)` porque todas as cidades são alcançáveis a partir de `1`, então `E ≥ V − 1`;
+* **Memória:** `O(V + E)`: a lista de adjacência ocupa `O(V + E)`, e `distTo[]`, `edgeTo[]` e a `IndexMinPQ` ocupam `O(V)`.
+
+Com `V = 10⁵` e `E = 2 · 10⁵`, são cerca de `2 · 10⁵ · 17 ≈ 3,4 · 10⁶` operações de heap, folgado para o limite de 1 s.
+
+---
+
+# Marco 3 — Rastreamento Manual
+
+Instância usada: a do grupo (marco 1, seção 8).
+
+```text
+4 6
+1 2 4
+1 3 1
+1 3 3
+3 2 2
+2 4 5
+3 4 8
+```
+
+Para facilitar a leitura, o rastreamento usa a numeração das cidades (`1..4`). No `algs4` os vértices começam em `0`, então a cidade `k` é o vértice `k − 1`. Essa conversão é feita no marco 4.
+
+## 1. Estruturas de dados (algs4)
+
+| Classe / campo | Papel |
+|----------------|-------|
+| `DirectedEdge` | um voo: `from()`, `to()` e `weight()` |
+| `EdgeWeightedDigraph` | o grafo; `adj(v)` devolve os voos que saem de `v` |
+| `Bag<DirectedEdge>` | lista de adjacência de cada cidade |
+| `distTo[]` | menor distância conhecida da origem até cada cidade |
+| `edgeTo[]` | último voo do melhor caminho conhecido até cada cidade |
+| `IndexMinPQ<Double> pq` | cidades com estimativa pendente, ordenadas por `distTo` |
+
+## 2. Estados iniciais
+
+### Listas de adjacência
+
+A `Bag` insere no início da lista, então os voos aparecem na ordem inversa da leitura:
+
+```text
+1: 1→3 (3), 1→3 (1), 1→2 (4)
+2: 2→4 (5)
+3: 3→4 (8), 3→2 (2)
+4: —
+```
+
+### Vetores e fila
+
+| Cidade | `distTo` | `edgeTo` |
+|--------|----------|----------|
+| 1 | 0 | — |
+| 2 | ∞ | — |
+| 3 | ∞ | — |
+| 4 | ∞ | — |
+
+```text
+pq = { 1: 0 }
+```
+
+Só a origem começa na fila, com distância `0`. As demais começam com `∞`, ou seja, "ainda sem caminho conhecido".
+
+## 3. Rastreamento
+
+Cada `delMin` retira a cidade de menor `distTo`. Em seguida, cada voo `v → w` que sai dela é relaxado: se `distTo[w] > distTo[v] + peso`, a estimativa de `w` melhora. Se `w` já está na fila, usa-se `decreaseKey`; senão, `insert`.
+
+| Passo | Operação | Teste | `distTo(1..4)` | `pq` |
+|-------|----------|-------|----------------|------|
+| 1 | `delMin` → `1` | — | `[0, ∞, ∞, ∞]` | `{ }` |
+| 2 | relax `1→3 (3)` | `∞ > 0 + 3` ✓ `insert` | `[0, ∞, 3, ∞]` | `{3: 3}` |
+| 3 | relax `1→3 (1)` | `3 > 0 + 1` ✓ `decreaseKey` | `[0, ∞, 1, ∞]` | `{3: 1}` |
+| 4 | relax `1→2 (4)` | `∞ > 0 + 4` ✓ `insert` | `[0, 4, 1, ∞]` | `{3: 1, 2: 4}` |
+| 5 | `delMin` → `3` | — | `[0, 4, 1, ∞]` | `{2: 4}` |
+| 6 | relax `3→4 (8)` | `∞ > 1 + 8` ✓ `insert` | `[0, 4, 1, 9]` | `{2: 4, 4: 9}` |
+| 7 | relax `3→2 (2)` | `4 > 1 + 2` ✓ `decreaseKey` | `[0, 3, 1, 9]` | `{2: 3, 4: 9}` |
+| 8 | `delMin` → `2` | — | `[0, 3, 1, 9]` | `{4: 9}` |
+| 9 | relax `2→4 (5)` | `9 > 3 + 5` ✓ `decreaseKey` | `[0, 3, 1, 8]` | `{4: 8}` |
+| 10 | `delMin` → `4` | sem voos de saída | `[0, 3, 1, 8]` | `{ }` |
+
+A fila ficou vazia, então o algoritmo termina.
+
+Evolução de `edgeTo`:
+
+| Cidade | Valores ao longo da execução | Final |
+|--------|------------------------------|-------|
+| 1 | — | — |
+| 2 | `1→2 (4)` no passo 4, `3→2 (2)` no passo 7 | `3→2 (2)` |
+| 3 | `1→3 (3)` no passo 2, `1→3 (1)` no passo 3 | `1→3 (1)` |
+| 4 | `3→4 (8)` no passo 6, `2→4 (5)` no passo 9 | `2→4 (5)` |
+
+## 4. Resultado
+
+```text
+distTo(1..4) = [0, 3, 1, 8]
+```
+
+```text
+0 3 1 8
+```
+
+Igual à saída esperada validada no marco 2.
+
+Os voos guardados em `edgeTo` formam a **árvore de caminhos mínimos** a partir da cidade `1`:
+
+```mermaid
+graph LR
+    1((1)) -- 1 --> 3((3))
+    3 -- 2 --> 2((2))
+    2 -- 5 --> 4((4))
+```
+
+O caminho até uma cidade é recuperado voltando pelos `edgeTo` (é o que faz `pathTo` do `algs4`). Para a cidade `4`:
+
+```text
+edgeTo[4] = 2→4,  edgeTo[2] = 3→2,  edgeTo[3] = 1→3   ⇒   1 → 3 → 2 → 4
+```
+
+## 5. Justificativa das decisões e do resultado
+
+* **Ordem de retirada:** as cidades saíram da fila na ordem `1, 3, 2, 4`, com distâncias `0, 1, 3, 8`, sempre crescentes. Como os pesos são positivos, quando uma cidade sai da fila sua distância é definitiva: nenhuma cidade que sai depois tem distância menor para oferecer um atalho. Por isso `distTo[3] = 1` e `distTo[2] = 3` nunca mudaram depois dos passos 5 e 8.
+* **Voo repetido `1 → 3`:** pela ordem da `Bag`, o voo de peso `3` foi relaxado primeiro (passo 2) e depois melhorado pelo de peso `1` (passo 3, `decreaseKey`). A ordem dos voos na lista não altera o resultado, só o número de atualizações.
+* **Caminhos com mais voos:** `distTo[2]` caiu de `4` (voo direto) para `3` (`1 → 3 → 2`), e `distTo[4]` caiu de `9` para `8` (`1 → 3 → 2 → 4`), confirmando o que foi visto na validação do marco 2.
+* **Contagem de operações:** foram 4 `delMin` (uma por cidade) e 6 relaxamentos (um por voo), o que corresponde à análise de complexidade do marco 2.
+
+## 6. Etapas explicadas no código algs4
+
+### 6.1 Relaxamento — `relax` (Enzo Esmeraldo)
+
+```java
+private void relax(DirectedEdge e) {
+    int v = e.from(), w = e.to();
+    if (distTo[w] > distTo[v] + e.weight()) {
+        distTo[w] = distTo[v] + e.weight();
+        edgeTo[w] = e;
+        if (pq.contains(w)) pq.decreaseKey(w, distTo[w]);
+        else                pq.insert(w, distTo[w]);
+    }
+}
+```
+
+* O voo `e` vai de `v` para `w`;
+* o `if` pergunta se chegar em `w` passando por `v` é mais barato do que o melhor caminho conhecido até `w`;
+* se for, `distTo[w]` recebe a nova distância e `edgeTo[w]` guarda o voo usado;
+* por fim, a fila é atualizada: se `w` já estava pendente, sua prioridade diminui (`decreaseKey`); se não, ele entra na fila (`insert`).
+
+Na instância, o passo 7 é um exemplo: `distTo[2] = 4 > 1 + 2`, então `distTo[2] = 3`, `edgeTo[2] = 3→2` e `decreaseKey(2, 3)`.
+
+### 6.2 Laço principal — construtor de `DijkstraSP` (Gustavo Andrade)
+
+```java
+for (int v = 0; v < G.V(); v++)
+    distTo[v] = Double.POSITIVE_INFINITY;
+distTo[s] = 0.0;
+
+pq = new IndexMinPQ<Double>(G.V());
+pq.insert(s, distTo[s]);
+while (!pq.isEmpty()) {
+    int v = pq.delMin();
+    for (DirectedEdge e : G.adj(v))
+        relax(e);
+}
+```
+
+* Todas as distâncias começam em `∞`, menos a origem `s`, que começa em `0`;
+* a fila começa só com a origem;
+* enquanto houver cidades pendentes, `delMin` retira a de menor `distTo`, que a partir daí é definitiva;
+* todos os voos que saem dela são relaxados, o que pode inserir ou atualizar outras cidades na fila.
+
+Na instância, o laço rodou 4 vezes (passos 1, 5, 8 e 10), uma para cada cidade.
+
+## 7. Observações para o marco 4
+
+* converter as cidades `1..n` para os vértices `0..n-1`;
+* trocar `double` por `long` em `distTo[]` e nos pesos, para garantir valores inteiros exatos (distâncias de até cerca de `10¹⁴`);
+* trocar `StdIn` por uma leitura mais rápida, já que são até 200.000 voos.

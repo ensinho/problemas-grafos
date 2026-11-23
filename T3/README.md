@@ -44,11 +44,20 @@ Detalhamento em [`acompanhamento/marcos.md`](acompanhamento/marcos.md).
 
 Lista de adjacência com pares `(destino, peso)`. Detalhamento e validação da instância pequena em [`acompanhamento/marcos.md`](acompanhamento/marcos.md).
 
+## Algoritmo
+
+**Dijkstra**, adaptado de `algs4.DijkstraSP`, com fila de prioridade indexada (`IndexMinPQ`).
+
+* **Tempo:** `O(E log V)`;
+* **Memória:** `O(V + E)`.
+
+Justificativa no marco 2 e rastreamento manual no marco 3, em [`acompanhamento/marcos.md`](acompanhamento/marcos.md).
+
 ## Andamento
 
 * [x] Marco 1 — Formulação
-* [x] Marco 2 — Representação e validação
-* [ ] Marco 3 — Escolha do algoritmo
+* [x] Marco 2 — Escolha do algoritmo
+* [x] Marco 3 — Rastreamento manual
 * [ ] Marco 4 — Adaptação e integração
 * [ ] Marco 5 — Testes e análise
 * [ ] Marco 6 — Submissão e apresentação
